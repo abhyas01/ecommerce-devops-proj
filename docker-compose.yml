@@ -1,0 +1,117 @@
+services:
+  database:
+    build:
+      context: ./ecommerce-database
+      dockerfile: Dockerfile
+    image: abhyas01/ecommerce-database:latest
+    container_name: ecommerce-database
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+      target: production
+    image: abhyas01/product-service:latest
+    container_name: product-service
+    environment:
+      DB_HOST: database
+      DB_NAME: ecommerce
+      DB_USER: postgres
+      DB_PASSWORD: password
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    networks:
+      - backend
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+      target: production
+    image: abhyas01/order-service:latest
+    container_name: order-service
+    environment:
+      DB_HOST: database
+      DB_NAME: ecommerce
+      DB_USER: postgres
+      DB_PASSWORD: password
+      PRODUCT_SERVICE_HOST: product-service
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    networks:
+      - backend
+    depends_on:
+      database:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./ecommerce-frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        REACT_APP_PRODUCT_API: http://localhost:3001
+        REACT_APP_ORDER_API: http://localhost:3002
+    image: abhyas01/ecommerce-frontend:latest
+    container_name: ecommerce-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
