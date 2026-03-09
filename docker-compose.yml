@@ -3,7 +3,7 @@ services:
     build:
       context: ./ecommerce-database
       dockerfile: Dockerfile
-    image: abhyas01/ecommerce-database:latest
+    image: 01abhyas/ecommerce-database:latest
     container_name: ecommerce-database
     environment:
       POSTGRES_DB: ecommerce
@@ -27,7 +27,7 @@ services:
       context: ./product-service
       dockerfile: Dockerfile
       target: production
-    image: abhyas01/product-service:latest
+    image: 01abhyas/product-service:latest
     container_name: product-service
     environment:
       DB_HOST: database
@@ -54,7 +54,7 @@ services:
       context: ./order-service
       dockerfile: Dockerfile
       target: production
-    image: abhyas01/order-service:latest
+    image: 01abhyas/order-service:latest
     container_name: order-service
     environment:
       DB_HOST: database
@@ -84,7 +84,7 @@ services:
       context: ./ecommerce-frontend
       dockerfile: Dockerfile
       target: production
-    image: abhyas01/ecommerce-frontend:latest
+    image: 01abhyas/ecommerce-frontend:latest
     container_name: ecommerce-frontend
     ports:
       - "3000:80"
