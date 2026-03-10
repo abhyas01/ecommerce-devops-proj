@@ -1,16 +1,3 @@
-/**
- * trivyScan
- * Scans a Docker image for vulnerabilities using Trivy.
- * Produces a JSON report archived as a build artifact.
- *
- * Usage:
- *   trivyScan(
- *     imageName: '01abhyas/order-service',
- *     dockerTag: env.DOCKER_TAG,
- *     severity: 'HIGH,CRITICAL',
- *     failOnVuln: false
- *   )
- */
 def call(Map config = [:]) {
   def imageName  = config.imageName  ?: error('trivyScan: imageName is required')
   def dockerTag  = config.dockerTag  ?: error('trivyScan: dockerTag is required')
@@ -19,6 +6,7 @@ def call(Map config = [:]) {
   def exitCode   = failOnVuln ? '1' : '0'
   def fullImage  = "${imageName}:${dockerTag}"
   def reportFile = "artifacts/trivy-report.json"
+  def trivyBin   = '/opt/homebrew/bin/trivy'
 
   sh """
     set -eu
@@ -26,14 +14,14 @@ def call(Map config = [:]) {
 
     echo "=== Trivy scan: ${fullImage} ==="
 
-    trivy image \
+    ${trivyBin} image \
       --severity ${severity} \
       --format json \
       --output ${reportFile} \
       --exit-code ${exitCode} \
       ${fullImage} || true
 
-    trivy image \
+    ${trivyBin} image \
       --severity ${severity} \
       --format table \
       ${fullImage} || true
